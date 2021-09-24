@@ -1,11 +1,12 @@
 import socket
+import json
 
-localIP     = "127.0.0.1"
-localPort   = 20003
-bufferSize  = 1024
+localIP = "127.0.0.1"
+localPort = 20003
+bufferSize = 1024
 
-msgFromServer       = "Sei lá qualquer coisa?"
-bytesToSend         = str.encode(msgFromServer)
+perguntas = json.dumps({"pergunta": "Sei lá qualquer coisa?", "respostas": ["sei la", "talvez seja isso", "ou isso"]})
+bytesToSend =  bytes(perguntas, encoding="utf-8")
 
 
 # Create a datagram socket

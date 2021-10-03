@@ -6,14 +6,18 @@ import json
 
 # Codigo do cliente
 cl = client(random.randint(100000,999999), 0)
+
 # Condição para registrar o jogador
 registerClient = True
+
 # Socket para cliente
 UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 serverAddressPort = ("127.0.0.1", 20003)
 bufferSize = 1024
+
 # Condição para iniciar o jogo
 start = False
+
 # variavel auxiliar para nao ficar repetindo mensagem de esperando jogadores
 noLoopWait = True
 
@@ -22,7 +26,7 @@ while registerClient:
     value = input("Press 's' for start\n")
     if(value == 's'):
         msgFromServer = json.dumps({"register":True, "client_id":cl.id})
-        bytesToSend         = bytes(msgFromServer, encoding="utf-8")
+        bytesToSend = bytes(msgFromServer, encoding="utf-8")
         UDPClientSocket.sendto(bytesToSend, serverAddressPort)
         registerClient = False
 

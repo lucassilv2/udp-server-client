@@ -80,8 +80,17 @@ while True:
     if('yourGameEnd' in json.loads(msgToServer[0])):
         print("Você finalizou suas questões aguarde os outros jogadores.")
         msgFromServer = json.dumps({'continue':'ok'})
-        time.sleep(300)
+        time.sleep(5)
         UDPClientSocket.sendto(bytes(msgFromServer, 'utf-8'), serverAddressPort)
+        continue
+    if('end' in json.loads(msgToServer[0])):
+        msgFromServer = json.dumps({'results':'ok'})
+        UDPClientSocket.sendto(bytes(msgFromServer, 'utf-8'), serverAddressPort)
+        continue
+    if('finish' in json.loads(msgToServer[0])):
+        print('Resultados:')
+        for msg in json.loads(msgToServer[0])['finish'] :
+            print(msg)
         continue
     # se servidor ja estiver preparado para enviar pergunta start sera verdadeiro
     if(start):

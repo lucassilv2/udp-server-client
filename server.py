@@ -1,6 +1,7 @@
 import socket
 import json
 from question import question
+from datetime import datetime
 # configuração do servidor
 localIP = "127.0.0.1"
 localPort = 20003
@@ -8,6 +9,7 @@ bufferSize = 1024
 
 # array com jogadores
 jogadores = []
+primeiroJogadorAcabou = 0
 # Perguntas em formato de objeto
 perguntaObj = []
 pergunta1  = question('Sabendo que uma intranet utiliza a infraestrutura de rede da empresa e fazendo uso das informações contidas no texto, considere que o computador de Paulo pode se comunicar com o computador servidor do Tribunal porque os recursos necessários estão fisicamente localizados em um raio de até 500 metros dentro do prédio do Tribunal, incluindo o computador de Paulo e o servidor. Isso significa que a rede utilizada é do tipo',[('a',"WAN."), ('b',"CAN."), ('c',"LAN."), ('d', 'MAN.'), ('e', 'ADSL.')], 'c', 0)
@@ -58,7 +60,7 @@ while(True):
                 else:
                     msgFromPlayer = json.dumps({'wait':True})
                     UDPServerSocket.sendto(bytes(msgFromPlayer, 'utf-8'), bytesAddressPair[1])
-                continue
+            continue
         # recebeu registerDifficulty do client
         if ('registerDifficulty' in json.loads(bytesAddressPair[0])):
             # so pode ser alterada uma vez
@@ -94,14 +96,21 @@ while(True):
                 jogadores[bytesAddressPair[1]][1].pop(0)
                 jogadores = [(k, v) for k, v in jogadores.items()]
                 UDPServerSocket.sendto(bytes(sendQuestion, 'utf-8'), bytesAddressPair[1])
-                continue
-            
+            continue
+        if('results' in json.loads(bytesAddressPair[0])):
+            msgFromPlayer = json.dumps({'finish':['vai ter resultados aqui','nesse formato']})
+            UDPServerSocket.sendto(bytes(msgFromPlayer, 'utf-8'), bytesAddressPair[1])
+            continue
         # recebeu continue do client
         if('continue' in json.loads(bytesAddressPair[0])):
             jogadores = dict(jogadores)
             if len(jogadores[bytesAddressPair[1]][1]) == 0:
                 jogadores = [(k, v) for k, v in jogadores.items()]
                 msgFromPlayer = json.dumps({'yourGameEnd':True})
+                if primeiroJogadorAcabou == 0:
+                    primeiroJogadorAcabou = datetime.now()
+                elif (datetime.now() - primeiroJogadorAcabou).seconds > 10:
+                    msgFromPlayer = json.dumps({'end':True})
                 UDPServerSocket.sendto(bytes(msgFromPlayer, 'utf-8'), bytesAddressPair[1])
             else:
                 sendQuestion = json.dumps(jogadores[bytesAddressPair[1]][1][0])
@@ -110,7 +119,6 @@ while(True):
                 jogadores[bytesAddressPair[1]][1].pop(0)
                 jogadores = [(k, v) for k, v in jogadores.items()]
                 UDPServerSocket.sendto(bytes(sendQuestion, 'utf-8'), bytesAddressPair[1])
-            jogadores = [(k, v) for k, v in jogadores.items()]
             continue
     except:
         jogadores = dict(jogadores)

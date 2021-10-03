@@ -3,6 +3,9 @@ import socket
 import random
 from client import client
 import json
+import time
+
+
 
 # Codigo do cliente
 cl = client(random.randint(100000,999999), 0)
@@ -36,9 +39,10 @@ while True:
     msgToServer = UDPClientSocket.recvfrom(bufferSize)
 
     # se for primeiro jogador seta a dificuldade
-    if("dificuldade" in json.loads(msgToServer[0])):
+    if("setDifficulty" in json.loads(msgToServer[0])):
         waitValidResponse = True
-        print(json.loads(msgToServer[0])["dificuldade"])
+        print('\n')
+        print(json.loads(msgToServer[0])["setDifficulty"])
         for msg in json.loads(msgToServer[0])['op'] :
             print(msg)
         while waitValidResponse:
@@ -59,6 +63,7 @@ while True:
     if('wait' in json.loads(msgToServer[0])):
         if json.loads(msgToServer[0])['wait'] == True:
             if noLoopWait:
+                print('\n')
                 print('Esperando jogadores...')
                 noLoopWait = False
             msgFromServer = json.dumps({'wait':'ok'})
@@ -66,8 +71,16 @@ while True:
         continue
     if('recivePoints' in json.loads(msgToServer[0])):
         cl.points = cl.points + int(json.loads(msgToServer[0])['recivePoints'])
-        print('Você tem '+str(cl.points))
+        print('\n')
+        print('Você tem '+str(cl.points)+' pontos')
+
         msgFromServer = json.dumps({'continue':'ok'})
+        UDPClientSocket.sendto(bytes(msgFromServer, 'utf-8'), serverAddressPort)
+        continue
+    if('yourGameEnd' in json.loads(msgToServer[0])):
+        print("Você finalizou suas questões aguarde os outros jogadores.")
+        msgFromServer = json.dumps({'continue':'ok'})
+        time.sleep(300)
         UDPClientSocket.sendto(bytes(msgFromServer, 'utf-8'), serverAddressPort)
         continue
     # se servidor ja estiver preparado para enviar pergunta start sera verdadeiro
@@ -75,6 +88,7 @@ while True:
         msgFromServer = json.dumps({'continue':'ok'})
         UDPClientSocket.sendto(bytes(msgFromServer, 'utf-8'), serverAddressPort)
         msgFromServer = UDPClientSocket.recvfrom(bufferSize)
+        print('\n')
         print("Pergunta: ")
         print(json.loads(msgFromServer[0])['pergunta'])
         print("Respostas: ")
@@ -83,7 +97,7 @@ while True:
             print(msg[0]+') '+msg[1])
         while waitValidResponse:
             value = input("Sua resposta:\n")
-            if(value == 'a' or value == 'b' or value == 'c' or value == 'd' ):
+            if(value == 'a' or value == 'b' or value == 'c' or value == 'd' or value == 'e' ):
                 waitValidResponse = False
         id = int(json.loads(msgFromServer[0])['id'])
-        UDPClientSocket.sendto(bytes(json.dumps({'resposta':value , 'id': id}), 'utf-8'), serverAddressPort)
+        UDPClientSocket.sendto(bytes(json.dumps({'response':value , 'id': id}), 'utf-8'), serverAddressPort)

@@ -27,10 +27,10 @@ perguntas = json.dumps(([{"pergunta": perguntaObj[0].questionText, "respostas": 
                          {"pergunta": perguntaObj[3].questionText, "respostas": perguntaObj[3].anwser, 'id': perguntaObj[3].id },
                          {"pergunta": perguntaObj[4].questionText, "respostas": perguntaObj[4].anwser, 'id': perguntaObj[4].id },
                       ]))
-
+perguntasLen = len(json.loads(perguntas)) 
 #dificuldade de jogo
 dificuldade = -1
-
+difficultyChange = True
 # Server socket
 UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 UDPServerSocket.bind((localIP, localPort))
@@ -48,9 +48,9 @@ while(True):
         # recebeu register do client
         if ('register' in json.loads(bytesAddressPair[0])):
             if(json.loads(bytesAddressPair[0])["register"] == True):
-                jogadores.append(json.loads(bytesAddressPair[0])["client_id"])
+                jogadores.append((bytesAddressPair[1], [0, json.loads(perguntas)]))
                 if(dificuldade == -1):
-                    msgFromPlayer = json.dumps({'dificuldade':'Selecione a dificuldade', 'op': ['1) facil', '2) medio', '3) dificil']})
+                    msgFromPlayer = json.dumps({'setDifficulty':'Selecione a dificuldade', 'op': ['1) facil', '2) medio', '3) dificil']})
                     UDPServerSocket.sendto(bytes(msgFromPlayer, 'utf-8'), bytesAddressPair[1])
                 elif len(jogadores) >= 2:
                     msgFromPlayer = json.dumps({'start':True})
@@ -61,7 +61,10 @@ while(True):
                 continue
         # recebeu registerDifficulty do client
         if ('registerDifficulty' in json.loads(bytesAddressPair[0])):
-            dificuldade = int(json.loads(bytesAddressPair[0])["registerDifficulty"]) - 1
+            # so pode ser alterada uma vez
+            if difficultyChange:
+                dificuldade = int(json.loads(bytesAddressPair[0])["registerDifficulty"]) - 1
+                difficultyChange = False
             if len(jogadores) >= 2:
                 msgFromPlayer = json.dumps({'start':True})
             else:
@@ -77,20 +80,45 @@ while(True):
             UDPServerSocket.sendto(bytes(msgFromPlayer, 'utf-8'), bytesAddressPair[1])
             continue
         # recebeu resposta do client
-        if('resposta' in json.loads(bytesAddressPair[0])):
+        if('response' in json.loads(bytesAddressPair[0])):
             pergunta = findQuestion(int(json.loads(bytesAddressPair[0])['id']))
-            if pergunta.correctlyAnswer == json.loads(bytesAddressPair[0])['resposta']:
+            if pergunta.correctlyAnswer == json.loads(bytesAddressPair[0])['response']:
+                jogadores = dict(jogadores)
+                jogadores[bytesAddressPair[1]][0] = int(jogadores[bytesAddressPair[1]][0]) + 10
+                jogadores = [(k, v) for k, v in jogadores.items()]
                 msgFromPlayer = json.dumps({'recivePoints':10})
                 UDPServerSocket.sendto(bytes(msgFromPlayer, 'utf-8'), bytesAddressPair[1])
             else:
-                sendQuestion = json.dumps(json.loads(perguntas)[dificuldade])
+                jogadores = dict(jogadores)
+                sendQuestion = json.dumps(jogadores[bytesAddressPair[1]][1][0])
+                jogadores[bytesAddressPair[1]][1].pop(0)
+                jogadores = [(k, v) for k, v in jogadores.items()]
                 UDPServerSocket.sendto(bytes(sendQuestion, 'utf-8'), bytesAddressPair[1])
                 continue
+            
         # recebeu continue do client
         if('continue' in json.loads(bytesAddressPair[0])):
-            sendQuestion = json.dumps(json.loads(perguntas)[dificuldade])
-            UDPServerSocket.sendto(bytes(sendQuestion, 'utf-8'), bytesAddressPair[1])
+            jogadores = dict(jogadores)
+            if len(jogadores[bytesAddressPair[1]][1]) == 0:
+                jogadores = [(k, v) for k, v in jogadores.items()]
+                msgFromPlayer = json.dumps({'yourGameEnd':True})
+                UDPServerSocket.sendto(bytes(msgFromPlayer, 'utf-8'), bytesAddressPair[1])
+            else:
+                sendQuestion = json.dumps(jogadores[bytesAddressPair[1]][1][0])
+                jogadores = dict(jogadores)
+               
+                jogadores[bytesAddressPair[1]][1].pop(0)
+                jogadores = [(k, v) for k, v in jogadores.items()]
+                UDPServerSocket.sendto(bytes(sendQuestion, 'utf-8'), bytesAddressPair[1])
+            jogadores = [(k, v) for k, v in jogadores.items()]
             continue
     except:
-        sendQuestion = json.dumps(json.loads(perguntas)[dificuldade])
-        UDPServerSocket.sendto(bytes(sendQuestion, 'utf-8'), bytesAddressPair[1])
+        jogadores = dict(jogadores)
+        if len(jogadores[bytesAddressPair[1]][1]) == 0:
+            msgFromPlayer = json.dumps({'yourGameEnd':True})
+            UDPServerSocket.sendto(bytes(msgFromPlayer, 'utf-8'), bytesAddressPair[1])
+        else:
+            sendQuestion = json.dumps(jogadores[bytesAddressPair[1]][1][0])
+            UDPServerSocket.sendto(bytes(sendQuestion, 'utf-8'), bytesAddressPair[1])
+        jogadores = [(k, v) for k, v in jogadores.items()]
+           

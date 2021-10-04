@@ -75,6 +75,15 @@ difficultyChange = True
 UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 UDPServerSocket.bind((localIP, localPort))
 
+def results(myID):
+    r = []
+    for i, jogador in enumerate(jogadores):
+        if(jogador[0] == myID):
+            r.append('My - '+str(jogador[1][0])+" pontos")
+        else:
+            r.append('Jogador-'+str(i+1)+' - '+str(jogador[1][0])+" pontos")
+    return r
+
 def findQuestion(id, perguntaObj):
     for p in perguntaObj:
         if p.id == id:
@@ -134,7 +143,12 @@ while(True):
             continue
         # recebeu resposta do client
         if('response' in json.loads(bytesAddressPair[0])):
-            pergunta = findQuestion(int(json.loads(bytesAddressPair[0])['id']))
+            if(dificuldade == 1):
+                pergunta = findQuestion(int(json.loads(bytesAddressPair[0])['id']), perguntaObj1)
+            elif dificuldade == 2:
+                pergunta = findQuestion(int(json.loads(bytesAddressPair[0])['id']), perguntaObj2)
+            else:
+                pergunta = findQuestion(int(json.loads(bytesAddressPair[0])['id']), perguntaObj3)
             if pergunta.correctlyAnswer == json.loads(bytesAddressPair[0])['response']:
                 jogadores = dict(jogadores)
                 jogadores[bytesAddressPair[1]][0] = int(jogadores[bytesAddressPair[1]][0]) + 10
@@ -149,7 +163,7 @@ while(True):
                 UDPServerSocket.sendto(bytes(sendQuestion, 'utf-8'), bytesAddressPair[1])
             continue
         if('results' in json.loads(bytesAddressPair[0])):
-            msgFromPlayer = json.dumps({'finish':['vai ter resultados aqui','nesse formato']})
+            msgFromPlayer = json.dumps({'finish':results(bytesAddressPair[1])})
             UDPServerSocket.sendto(bytes(msgFromPlayer, 'utf-8'), bytesAddressPair[1])
             continue
         # recebeu continue do client

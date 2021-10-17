@@ -1,4 +1,3 @@
-
 import socket
 import random
 from client import client
@@ -56,8 +55,8 @@ while True:
     if('start' in json.loads(msgToServer[0])):
         if json.loads(msgToServer[0])['start'] == True:
             start = True
-            msgFromServer = str.encode('ok')
-            UDPClientSocket.sendto(msgFromServer, serverAddressPort)
+            msgFromServer = json.dumps({'continue':'ok'})
+            UDPClientSocket.sendto(bytes(msgFromServer, 'utf-8'), serverAddressPort)
         continue
     # fica esperando ter pelo menos + 1 jogador para totalizar o minimo de 2
     if('wait' in json.loads(msgToServer[0])):
@@ -99,14 +98,14 @@ while True:
         msgFromServer = UDPClientSocket.recvfrom(bufferSize)
         print('\n')
         print("Pergunta: ")
-        print(json.loads(msgFromServer[0])['pergunta'])
+        print(json.loads(msgToServer[0])['pergunta'])
         print("Respostas: ")
         waitValidResponse = True
-        for msg in json.loads(msgFromServer[0])['respostas'] :
+        for msg in json.loads(msgToServer[0])['respostas'] :
             print(msg[0]+') '+msg[1])
         while waitValidResponse:
             value = input("Sua resposta:\n")
             if(value == 'a' or value == 'b' or value == 'c' or value == 'd' or value == 'e' ):
                 waitValidResponse = False
-        id = int(json.loads(msgFromServer[0])['id'])
+        id = int(json.loads(msgToServer[0])['id'])
         UDPClientSocket.sendto(bytes(json.dumps({'response':value , 'id': id}), 'utf-8'), serverAddressPort)
